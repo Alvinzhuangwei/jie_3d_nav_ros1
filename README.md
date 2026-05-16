@@ -4,6 +4,7 @@ pip install vtk
 pip install open3d
 
 # 描述(基于6-robot/jie_3d_nav)
+https://github.com/6-robot/jie_3d_nav
 一套基于 ROS 1 的 3D 导航系统，通过 Web 界面交互。本系统已在智元科技 D1 机器狗以及留形科技 Odin 1 空间定位模组上测试通过。
 
 本目录包含三个 ROS 1 功能包：
