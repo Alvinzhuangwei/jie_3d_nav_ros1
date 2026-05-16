@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="world_name" default=""/>
+    <arg name="launch_map_gui" default="true"/>
+
+    <!-- world_to_octomap_node -->
+    <node pkg="jie_octomap" type="world_to_octomap_node" name="world_to_octomap" output="screen">
+        <param name="world_name" value="$(arg world_name)"/>
+        <param name="resolution" value="0.2"/>
+        <param name="frame_id" value="map"/>
+        <param name="octomap_topic" value="/octomap"/>
+        <param name="marker_topic" value="/octomap_occupied_markers"/>
+    </node>
+
+    <!-- planner_node -->
+    <node pkg="octo_planner" type="jie_path_node" name="jie_path_node" output="screen">
+        <param name="world_name" value="$(arg world_name)"/>
+        <param name="octomap_topic" value="/octomap"/>
+        <param name="start_topic" value="/start_point"/>
+        <param name="goal_topic" value="/goal_point"/>
+        <param name="path_topic" value="/planned_path"/>
+        <param name="path_marker_topic" value="/planned_path_marker"/>
+        <param name="preblocked_marker_topic" value="/preblocked_cells_markers"/>
+        <param name="traversable_marker_topic" value="/traversable_cells_markers"/>
+        <param name="risk_cost_topic" value="/risk_cost_cells"/>
+        <param name="frame_id" value="map"/>
+        <param name="map_id" value="world_jie_path_map"/>
+        <param name="robot_radius" value="0.12"/>
+        <param name="max_iterations" value="500000"/>
+        <param name="snap_search_radius_cells" value="12"/>
+        <param name="require_ground_support" value="true"/>
+        <param name="ground_support_xy_radius_cells" value="1"/>
+        <param name="ground_support_depth_cells" value="2"/>
+    </node>
+
+    <!-- world_selector_gui_node -->
+    <node pkg="jie_octomap" type="world_selector_gui.py" name="world_selector_gui" output="screen">
+        <param name="world_name" value="$(arg world_name)"/>
+        <param name="world_file_cmd_topic" value="/world_file_cmd"/>
+        <param name="occupied_marker_topic" value="/octomap_occupied_markers"/>
+        <param name="preblocked_topic" value="/preblocked_cells_markers"/>
+        <param name="traversable_topic" value="/traversable_cells_markers"/>
+    </node>
+
+    <!-- map_package_manager_node -->
+    <node pkg="jie_octomap" type="map_package_manager.py" name="map_package_manager" output="screen" if="$(arg launch_map_gui)">
+        <param name="~autoload_package_path" value=""/>
+        <param name="~octomap_topic" value="/octomap"/>
+        <param name="~occupied_marker_topic" value="/octomap_occupied_markers"/>
+        <param name="~preblocked_topic" value="/preblocked_cells_markers"/>
+        <param name="~traversable_topic" value="/traversable_cells_markers"/>
+        <param name="~risk_cost_topic" value="/risk_cost_cells"/>
+        <param name="~planner_meta_service" value="/jie_path_node/get_meta"/>
+        <param name="~planner_export_service" value="/jie_path_node/export_snapshot"/>
+    </node>
+</launch>

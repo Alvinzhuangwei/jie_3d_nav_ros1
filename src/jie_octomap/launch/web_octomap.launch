@@ -1,0 +1,88 @@
+<!-- web_octomap.launch  —  ROS 1 port of web_octomap.launch.py
+     Args:
+       map_package      – path to saved OctoMap map package directory
+       http_port        – HTTP port for the static web server (default: 8080)
+       launch_rosbridge – "true"/"false", launch rosbridge_websocket (default: false)
+       launch_map_gui   – "true"/"false", launch map_save_gui (default: false)
+
+     NOTE: The ROS 2 version auto-called "ros2 service call" 2 s after startup
+     to load the map package. In ROS 1 we pass autoload_package_path directly
+     as a parameter to map_package_manager, which handles autoloading itself.
+-->
+<launch>
+  <arg name="map_package"      default="/home/ubuntu/catkin_3dnavi/src/map"/>
+  <arg name="http_port"        default="8080"/>
+  <arg name="launch_rosbridge" default="false"/>
+  <arg name="launch_map_gui"   default="false"/>
+
+  <!-- jie_path_node -->
+  <node pkg="octo_planner" type="jie_path_node" name="jie_path_node" output="screen">
+    <param name="octomap_topic"                   value="/octomap"/>
+    <param name="start_topic"                     value="/start_point"/>
+    <param name="goal_topic"                      value="/goal_point"/>
+    <param name="path_topic"                      value="/planned_path"/>
+    <param name="path_marker_topic"               value="/planned_path_marker"/>
+    <param name="preblocked_marker_topic"         value="/preblocked_cells_markers"/>
+    <param name="traversable_marker_topic"        value="/traversable_cells_markers"/>
+    <param name="risk_cost_topic"                 value="/risk_cost_cells"/>
+    <param name="frame_id"                        value="map"/>
+    <param name="map_id"                          value="web_loaded_map"/>
+    <param name="source_world_file"               value=""/>
+    <param name="robot_radius"                    value="0.25"/>
+    <param name="max_iterations"                  value="500000"/>
+    <param name="snap_search_radius_cells"        value="12"/>
+    <param name="require_ground_support"          value="true"/>
+    <param name="strict_direct_ground_support"    value="false"/>
+    <param name="ground_support_xy_radius_cells"  value="1"/>
+    <param name="ground_support_depth_cells"      value="1"/>
+    <param name="enable_preblocked_costmap"       value="true"/>
+    <param name="preblocked_costmap_radius_cells" value="3"/>
+    <param name="preblocked_costmap_weight"       value="2.5"/>
+  </node>
+
+  <!-- octomap_to_occupied_markers_node -->
+  <node pkg="jie_octomap" type="octomap_to_occupied_markers_node"
+        name="octomap_to_occupied_markers" output="screen">
+    <param name="octomap_topic" value="/octomap"/>
+    <param name="marker_topic"  value="/octomap_occupied_markers"/>
+    <param name="frame_id"      value="map"/>
+  </node>
+
+  <!-- web_click_selector -->
+  <node pkg="jie_octomap" type="web_click_selector.py"
+        name="web_click_selector" output="screen">
+    <param name="occupied_marker_topic"          value="/octomap_occupied_markers"/>
+    <param name="preblocked_marker_topic"        value="/preblocked_cells_markers"/>
+    <param name="raw_click_topic"                value="/web_clicked_point"/>
+    <param name="marker_topic"                   value="/selection_markers"/>
+    <param name="start_topic"                    value="/start_point"/>
+    <param name="goal_topic"                     value="/goal_point"/>
+    <param name="status_topic"                   value="/web_selection_status"/>
+    <param name="robot_radius"                   value="0.25"/>
+    <param name="snap_search_radius_cells"       value="12"/>
+    <param name="require_ground_support"         value="true"/>
+    <param name="strict_direct_ground_support"   value="false"/>
+    <param name="ground_support_xy_radius_cells" value="1"/>
+    <param name="ground_support_depth_cells"     value="1"/>
+  </node>
+
+  <!-- map_package_manager — autoload_package_path triggers auto-load on startup -->
+  <node pkg="jie_octomap" type="map_package_manager.py" name="map_package_manager" output="screen">
+    <param name="~autoload_package_path" value="$(arg map_package)"/>
+  </node>
+
+  <!-- map_save_gui (conditional) -->
+  <node if="$(arg launch_map_gui)"
+        pkg="jie_octomap" type="map_save_gui"
+        name="map_save_gui" output="screen"/>
+
+  <!-- static HTTP server for web UI -->
+  <node pkg="jie_octomap" type="no_cache_http_server.py"
+        name="web_http_server" output="screen"
+        args="--port $(arg http_port) --directory $(find jie_octomap)/web"/>
+
+  <!-- rosbridge_websocket (conditional) -->
+  <node if="$(arg launch_rosbridge)"
+        pkg="rosbridge_server" type="rosbridge_websocket"
+        name="rosbridge_websocket" output="screen"/>
+</launch>
