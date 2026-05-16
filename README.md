@@ -1,4 +1,4 @@
-# 依赖包安装 (ROS 1 版本)
+# 依赖包安装 (UBUNTU20 ROS 1 Noetic版本)
 
 pip install vtk
 pip install open3d
